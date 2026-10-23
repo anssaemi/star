@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>우리반 칭찬별 관리 시스템 🌟</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti CDN (폭죽 애니메이션) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Gothic A1) -->
+    <link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;600;800&family=Jua&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pastelYellow: '#FEF08A',
+                        pastelGreen: '#DCFCE7',
+                        pastelRed: '#FEE2E2',
+                        pastelBlue: '#E0F2FE',
+                        pastelPurple: '#F3E8FF',
+                        brandPrimary: '#6366F1'
+                    },
+                    fontFamily: {
+                        jua: ['Jua', 'sans-serif'],
+                        gothic: ['Gothic A1', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Gothic A1', sans-serif;
+            background-color: #F8FAFC;
+        }
+        .font-jua {
+            font-family: 'Jua', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Star bounce animation */
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col pb-12">
+
+    <!-- 상단 헤더 & 고정 현황 표 (Sticky Header) -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur shadow-md border-b-2 border-indigo-100">
+        <div class="max-w-7xl mx-auto px-4 py-3">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-3xl">⭐</span>
+                    <h1 class="text-2xl sm:text-3xl font-jua text-indigo-600 tracking-wide">우리반 칭찬별 지도</h1>
+                    <span class="text-2xl">🎁</span>
+                </div>
+                <div class="flex gap-2 text-xs sm:text-sm">
+                    <button onclick="confirmReset()" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-100 text-slate-600 hover:text-rose-600 rounded-lg transition font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right"></i> 전체 초기화
+                    </button>
+                </div>
+            </div>
+
+            <!-- 고정 실시간 요약 표 -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-inner">
+                <table class="w-full text-center border-collapse min-w-[700px]">
+                    <thead>
+                        <tr class="bg-indigo-50/80 text-indigo-900 font-jua text-base border-b border-indigo-100">
+                            <th class="py-2 px-3 border-r border-indigo-100 w-24">이름</th>
+                            <th class="py-2 px-3 border-r border-indigo-100">현재 칭찬 현황 (별 & 선물)</th>
+                            <th class="py-2 px-3 w-28">총 별 개수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- JS에서 동적 생성됨 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="max-w-7xl mx-auto px-4 mt-6 flex-1 w-full space-y-8">
+
+        <!-- 빠른 입력 폼 섹션 (잘했어요 / 아쉬워요) -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- 잘했어요 (상점) 카드리스트 -->
+            <div class="bg-emerald-50/70 border-2 border-emerald-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xl font-bold shadow-sm">
+                        👍
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-jua text-emerald-800">잘했어요! (칭찬별 +1)</h2>
+                        <p class="text-xs text-emerald-600">친절한 행동, 규칙 준수, 멋진 발표를 칭찬해주세요.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- 드롭다운/버튼 방식 -->
+                    <div class="flex gap-2">
+                        <select id="praiseSelect" class="flex-1 bg-white border border-emerald-300 text-slate-700 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                            <option value="">학생 선택...</option>
+                        </select>
+                        <button onclick="addPointFromSelect('praise')" class="bg-emerald-500 hover:bg-emerald-600 text-white font-jua px-5 py-2.5 rounded-xl shadow transition active:scale-95 flex items-center gap-1">
+                            <i class="fa-solid fa-plus"></i> 별 주기
+                        </button>
+                    </div>
+
+                    <!-- 텍스트 직접 입력 방식 -->
+                    <div class="pt-2 border-t border-emerald-200/60 flex gap-2">
+                        <input type="text" id="praiseInput" placeholder="이름 직접 입력..." class="flex-1 bg-white border border-emerald-300 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" onkeypress="if(event.key === 'Enter') addPointFromInput('praise')">
+                        <button onclick="addPointFromInput('praise')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
+                            입력 부여
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 아쉬워요 (벌점) 카드리스트 -->
+            <div class="bg-rose-50/70 border-2 border-rose-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-rose-500 text-white flex items-center justify-center text-xl font-bold shadow-sm">
+                        💧
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-jua text-rose-800">아쉬워요 (칭찬별 -1)</h2>
+                        <p class="text-xs text-rose-600">약속을 지키지 못했을 때 별을 하나 차감합니다.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- 드롭다운/버튼 방식 -->
+                    <div class="flex gap-2">
+                        <select id="penaltySelect" class="flex-1 bg-white border border-rose-300 text-slate-700 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-rose-400">
+                            <option value="">학생 선택...</option>
+                        </select>
+                        <button onclick="addPointFromSelect('penalty')" class="bg-rose-500 hover:bg-rose-600 text-white font-jua px-5 py-2.5 rounded-xl shadow transition active:scale-95 flex items-center gap-1">
+                            <i class="fa-solid fa-minus"></i> 별 감소
+                        </button>
+                    </div>
+
+                    <!-- 텍스트 직접 입력 방식 -->
+                    <div class="pt-2 border-t border-rose-200/60 flex gap-2">
+                        <input type="text" id="penaltyInput" placeholder="이름 직접 입력..." class="flex-1 bg-white border border-rose-300 text-slate-700 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-rose-400" onkeypress="if(event.key === 'Enter') addPointFromInput('penalty')">
+                        <button onclick="addPointFromInput('penalty')" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
+                            입력 차감
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- 학생별 상세 카드 리스트 -->
+        <section>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-jua text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-users text-indigo-500"></i> 우리반 학생 개인 카드
+                </h2>
+                <span class="text-xs text-slate-500">각 카드의 + / - 버튼으로도 직관적으로 조정할 수 있습니다.</span>
+            </div>
+
+            <div id="studentGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- JS에서 카드가 동적 생성됩니다 -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 알림 메시지 모달/토스트 -->
+    <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 pointer-events-none">
+        <span id="toastIcon" class="text-2xl">✨</span>
+        <span id="toastMessage" class="font-medium text-sm">알림 메시지</span>
+    </div>
+
+    <!-- JavaScript 로직 -->
+    <script>
+        // 초기 학생 데이터 정의
+        const INITIAL_STUDENTS = [
+            '강은빈', '이정원', '김세희', '신안준', '신지온', 
+            '홍민서', '배은솔', '배이솔', '구도영', '박미랑', '유사랑'
+        ];
+
+        // 데이터 상태 객체 (LocalStorage 불러오기 또는 초기화)
+        let studentsData = {};
+
+        // 페이지 로드 시 실행
+        window.onload = function() {
+            loadData();
+            renderAll();
+        };
+
+        // LocalStorage에서 데이터 로드
+        function loadData() {
+            const saved = localStorage.getItem('class_rewards_data');
+            if (saved) {
+                try {
+                    studentsData = JSON.parse(saved);
+                    // 혹시 새로 추가된 학생이 있을 경우 대응
+                    INITIAL_STUDENTS.forEach(name => {
+                        if (!studentsData[name]) {
+                            studentsData[name] = { stars: 0, gifts: 0 };
+                        }
+                    });
+                } catch (e) {
+                    initDefaultData();
+                }
+            } else {
+                initDefaultData();
+            }
+        }
+
+        // 기본 데이터 설정
+        function initDefaultData() {
+            studentsData = {};
+            INITIAL_STUDENTS.forEach(name => {
+                studentsData[name] = { stars: 0, gifts: 0 };
+            });
+            saveData();
+        }
+
+        // LocalStorage에 데이터 저장
+        function saveData() {
+            localStorage.setItem('class_rewards_data', JSON.stringify(studentsData));
+        }
+
+        // 전체 화면 UI 업데이트 (표, 카드리스트, 드롭다운)
+        function renderAll() {
+            renderSummaryTable();
+            renderStudentCards();
+            updateSelectOptions();
+        }
+
+        // 1. 상단 고정 표 업데이트
+        function renderSummaryTable() {
+            const tbody = document.getElementById('summaryTableBody');
+            tbody.innerHTML = '';
+
+            INITIAL_STUDENTS.forEach(name => {
+                const data = studentsData[name] || { stars: 0, gifts: 0 };
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-indigo-50/30 transition border-b border-slate-100';
+
+                // 시각화 표현 (선물 상자와 남아있는 별)
+                let visualContent = '';
+                
+                // 선물 상자 개수만큼 표시
+                for (let i = 0; i < data.gifts; i++) {
+                    visualContent += `<span class="inline-block text-xl mx-0.5 animate-pop title="선물 1개 (별 5개 달성)">🎁</span>`;
+                }
+                // 잔여 별 표시
+                for (let i = 0; i < data.stars; i++) {
+                    visualContent += `<span class="inline-block text-lg text-amber-400 mx-0.5 animate-pop">⭐</span>`;
+                }
+
+                if (data.gifts === 0 && data.stars === 0) {
+                    visualContent = `<span class="text-xs text-slate-300 italic">아직 모은 별이 없어요</span>`;
+                }
+
+                const totalStarsCount = (data.gifts * 5) + data.stars;
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 border-r border-slate-100 font-bold text-slate-700">${name}</td>
+                    <td class="py-2.5 px-3 border-r border-slate-100 text-left pl-4">${visualContent}</td>
+                    <td class="py-2.5 px-3 font-semibold text-indigo-600">${totalStarsCount}개</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 2. 하단 개별 학생 카드 업데이트
+        function renderStudentCards() {
+            const grid = document.getElementById('studentGrid');
+            grid.innerHTML = '';
+
+            INITIAL_STUDENTS.forEach(name => {
+                const data = studentsData[name] || { stars: 0, gifts: 0 };
+                const totalStars = (data.gifts * 5) + data.stars;
+
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between';
+                
+                // 별 5개 슬롯 시각화
+                let starSlots = '';
+                for (let i = 0; i < 5; i++) {
+                    if (i < data.stars) {
+                        starSlots += `<span class="text-2xl text-amber-400 drop-shadow-sm">⭐</span>`;
+                    } else {
+                        starSlots += `<span class="text-2xl text-slate-200">☆</span>`;
+                    }
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-jua text-lg text-slate-800">${name}</h3>
+                            <span class="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-1 rounded-full">
+                                선물 🎁 ${data.gifts}개
+                            </span>
+                        </div>
+                        
+                        <!-- 현재 잔여 별 슬롯 -->
+                        <div class="bg-amber-50/60 rounded-xl p-2 mb-3 flex justify-around items-center border border-amber-100">
+                            ${starSlots}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <span class="text-xs text-slate-400">누적: <strong class="text-slate-600">${totalStars}</strong>개</span>
+                        <div class="flex gap-1">
+                            <button onclick="changePoints('${name}', -1)" class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 hover:bg-rose-200 font-bold flex items-center justify-center transition active:scale-95" title="별 1개 감소">
+                                -
+                            </button>
+                            <button onclick="changePoints('${name}', 1)" class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-200 font-bold flex items-center justify-center transition active:scale-95" title="별 1개 추가">
+                                +
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 3. 드롭다운 옵션 업데이트
+        function updateSelectOptions() {
+            const praiseSelect = document.getElementById('praiseSelect');
+            const penaltySelect = document.getElementById('penaltySelect');
+
+            const praiseVal = praiseSelect.value;
+            const penaltyVal = penaltySelect.value;
+
+            praiseSelect.innerHTML = '<option value="">학생 선택...</option>';
+            penaltySelect.innerHTML = '<option value="">학생 선택...</option>';
+
+            INITIAL_STUDENTS.forEach(name => {
+                praiseSelect.innerHTML += `<option value="${name}">${name}</option>`;
+                penaltySelect.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+
+            praiseSelect.value = praiseVal;
+            penaltySelect.value = penaltyVal;
+        }
+
+        // 점수 변경 핵심 로직 (+1 또는 -1)
+        function changePoints(name, delta) {
+            if (!studentsData[name]) return;
+
+            let currentStars = studentsData[name].stars;
+            let currentGifts = studentsData[name].gifts;
+
+            if (delta > 0) {
+                // 별 추가
+                currentStars += 1;
+                showToast(`⭐ ${name} 학생에게 칭찬별을 부여했습니다!`, '⭐');
+
+                // 5개 모였을 경우 선물 변환 로직
+                if (currentStars >= 5) {
+                    currentStars = 0;
+                    currentGifts += 1;
+                    triggerConfetti();
+                    showToast(`🎉 축하합니다! ${name} 학생이 별 5개를 모아 선물🎁을 받았습니다!`, '🎁');
+                }
+            } else if (delta < 0) {
+                // 별 감소 (선물 개수까지 고려)
+                if (currentStars > 0) {
+                    currentStars -= 1;
+                    showToast(`💧 ${name} 학생의 칭찬별이 1개 감소했습니다.`, '💧');
+                } else if (currentGifts > 0) {
+                    // 남아있는 별은 0개이지만 선물이 있는 경우, 선물 1개를 별 4개로 환원 처리
+                    currentGifts -= 1;
+                    currentStars = 4;
+                    showToast(`💧 ${name} 학생의 칭찬별이 차감되었습니다.`, '💧');
+                } else {
+                    showToast(`차감할 칭찬별이 없습니다.`, '⚠️');
+                    return;
+                }
+            }
+
+            studentsData[name].stars = currentStars;
+            studentsData[name].gifts = currentGifts;
+
+            saveData();
+            renderAll();
+        }
+
+        // 드롭다운 선택으로 변경
+        function addPointFromSelect(type) {
+            const selectId = type === 'praise' ? 'praiseSelect' : 'penaltySelect';
+            const name = document.getElementById(selectId).value;
+
+            if (!name) {
+                showToast('학생을 선택해 주세요.', '⚠️');
+                return;
+            }
+
+            changePoints(name, type === 'praise' ? 1 : -1);
+        }
+
+        // 텍스트 직접 입력으로 변경
+        function addPointFromInput(type) {
+            const inputId = type === 'praise' ? 'praiseInput' : 'penaltyInput';
+            const inputElem = document.getElementById(inputId);
+            const name = inputElem.value.trim();
+
+            if (!name) {
+                showToast('학생 이름을 입력해 주세요.', '⚠️');
+                return;
+            }
+
+            if (!INITIAL_STUDENTS.includes(name)) {
+                showToast(`'${name}' 학생은 우리반 명단에 없습니다.`, '❌');
+                return;
+            }
+
+            changePoints(name, type === 'praise' ? 1 : -1);
+            inputElem.value = ''; // 입력란 초기화
+        }
+
+        // 전체 초기화
+        function confirmReset() {
+            if (confirm('정말로 모든 학생의 칭찬별과 선물 데이터를 초기화하시겠습니까?')) {
+                initDefaultData();
+                renderAll();
+                showToast('모든 데이터가 초기화되었습니다.', '🔄');
+            }
+        }
+
+        // 토스트 메시지 출력
+        let toastTimeout;
+        function showToast(message, icon = '✨') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            toastIcon.textContent = icon;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // 선물 달성 폭죽 효과 (Canvas Confetti)
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
