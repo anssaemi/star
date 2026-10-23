@@ -123,7 +123,8 @@
     </div>
 
     <script>
-        const students = ['강은빈', '이정원', '김세희', '신안준', '신지온', '홍민서', '배은솔', '배이솔', '구도영', '박미랑', '유사랑'];
+        // 학생 명단 (권조은, 이은경 추가)
+        const students = ['강은빈', '이정원', '김세희', '신안준', '신지온', '홍민서', '배은솔', '배이솔', '구도영', '박미랑', '유사랑', '권조은', '이은경'];
         
         // LocalStorage 데이터 로드 또는 초기화
         let data = JSON.parse(localStorage.getItem('classroom_reward_data')) || {};
@@ -155,7 +156,7 @@
                 // 별 5개 이상 달성 여부 체크
                 const isGiftReady = info.stars >= 5;
 
-                // 상단 표 별 영역 표시 (글씨 및 아이콘 크기 확장)
+                // 상단 표 별 영역 표시
                 let starDisplay = '';
                 if (isGiftReady) {
                     starDisplay = `<button onclick="claimGift('${name}')" class="bg-amber-400 hover:bg-amber-500 text-white font-extrabold px-3 py-1 rounded-full text-xs sm:text-sm animate-bounce shadow-md">🎁 선물 받기 (클릭 시 초기화)</button>`;
